@@ -10,6 +10,7 @@ ShellRoot {
 
     property bool showing: false
     property bool weatherLoaded: false
+    property string _dir: Qt.resolvedUrl(".").toString().replace("file://", "")
 
     PanelWindow {
         id: window
@@ -134,7 +135,7 @@ ShellRoot {
 
     Process {
         id: weatherProcess
-        command: ["/home/brextal/.config/quickshell/calendar/weather_fetch.sh"]
+        command: [root._dir + "weather_fetch.sh"]
         running: true
 
         stdout: StdioCollector {
