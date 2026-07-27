@@ -10,7 +10,7 @@ ShellRoot {
 
     property bool showing: false
     property bool weatherLoaded: false
-    property string _dir: Qt.resolvedUrl(".").toString().replace("file://", "")
+    property string _dir: Qt.resolvedUrl(".").toString().replace("file://", "") + "/"
 
     PanelWindow {
         id: window
@@ -25,7 +25,7 @@ ShellRoot {
 
         visible: root.showing
 
-        implicitHeight: 340
+        implicitHeight: 620
 
         Item {
             anchors.fill: parent
@@ -38,7 +38,7 @@ ShellRoot {
                 anchors.topMargin: 14
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 10
-                radius: 18
+                radius: 0
                 color: "#1affffff"
                 border {
                     color: "#25ffffff"
@@ -109,7 +109,8 @@ ShellRoot {
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.rightMargin: 80
-                            text: root.weatherLoaded ? "\uD83C\uDF26\uFE0F Maip\u00FA" : "\u23F3 clima..."
+                            text: root.weatherLoaded ? "\uf0c2 Maip\u00FA" : "\uf017 clima..."
+                            font.family: "Symbols Nerd Font"
                             color: "#aaaaaa"
                             font.pixelSize: 10
                             opacity: 0.5
@@ -126,7 +127,27 @@ ShellRoot {
                             notifyProcess.running = false
                             notifyProcess.running = true
                         }
-                        height: parent.height - 24
+                        height: 420
+                    }
+
+                    Rectangle { width: parent.width; height: 1; color: "#30ffffff" }
+
+                    Text {
+                        text: "Clima"
+                        color: "#ffffff"
+                        font.pixelSize: 11
+                        font.bold: true
+                        opacity: 0.7
+                        anchors.left: parent.left
+                        anchors.leftMargin: 8
+                    }
+
+                    WeatherStrip {
+                        id: weatherStrip
+                        width: parent.width
+                        height: 80
+                        weatherByDay: strip.weatherByDay
+                        weatherVersion: strip.weatherVersion
                     }
                 }
             }
@@ -136,7 +157,7 @@ ShellRoot {
     Process {
         id: weatherProcess
         command: [root._dir + "weather_fetch.sh"]
-        running: true
+        running: false
 
         stdout: StdioCollector {
             waitForEnd: true
@@ -149,9 +170,7 @@ ShellRoot {
 
                     var byDay = {}
                     for (var i = 0; i < daily.time.length; i++) {
-                        var parts = daily.time[i].split("-")
-                        var dayNum = parseInt(parts[2])
-                        byDay["" + dayNum] = {
+                        byDay[daily.time[i]] = {
                             code: daily.weathercode[i],
                             temp: Math.round(daily.temperature_2m_max[i]) + "\u00B0"
                         }
@@ -159,7 +178,7 @@ ShellRoot {
                     strip.weatherByDay = byDay
                     strip.weatherVersion++
                     root.weatherLoaded = true
-                    print("Weather OK: " + daily.time.length + " days loaded, day4=" + JSON.stringify(byDay["4"]) + " day5=" + JSON.stringify(byDay["5"]))
+                    print("Weather OK: " + daily.time.length + " days loaded")
                 } catch (e) {
                     print("Weather fetch failed: " + e)
                 }
@@ -169,6 +188,15 @@ ShellRoot {
         onRunningChanged: {
             if (!running) {
                 weatherTimer.restart()
+            }
+        }
+    }
+
+    Connections {
+        target: root
+        function onShowingChanged() {
+            if (root.showing && !root.weatherLoaded) {
+                weatherProcess.running = true
             }
         }
     }
